@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch the Star Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #4A90E2;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+
+        h1 {
+            margin-top: 20px;
+        }
+
+        .game-area {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            border: 2px solid #fff;
+            overflow: hidden;
+            background-color: #007BFF;
+            border-radius: 10px;
+            transition: box-shadow 0.5s ease;
+            font-size: 24px;
+        }
+
+        .basket {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 60px;
+            height: 20px;
+            background-color: #FFA500;
+            border-radius: 10px;
+            transform: translateX(-0%);
+            text-align: center;
+        }
+
+        .star,
+        .lemon {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+        }
+
+        .star {
+            color: #FFD700;
+        }
+
+        .bomb {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            color: #FF4500;
+            line-height: 24px;
+        }
+
+        .shield {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            color: #6A5ACD;
+            line-height: 24px;
+        }
+
+        button {
+            margin-top: 32px;
+            padding: 10px 10px;
+            font-size: 16px;
+            background-color: #28A745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .scoreboard {
+            margin-top: 10px;
+        }
+
+        .time-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 14px;
+            color: white;
+        }
+
+        .level-display {
+            position: absolute;
+            top: 30px;
+            left: 10px;
+            font-size: 10px;
+            color: yellow;
+            animation: zoom 0.5s ease;
+        }
+
+        .speed-display {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            font-size: 10px; /* Make the speed text small */
+            color: red; /* Change speed text color to red */
+            display: none; /* Hide by default */
+        }
+
+        .shield-timer,
+        .double-points-timer {
+            position: absolute;
+            right: 10px;
+            font-size: 10px;
+            color: white;
+            display: none;
+        }
+
+        .shield-timer {
+            top: 30px;
+        }
+
+        .double-points-timer {
+            top: 50px;
+        }
+
+        .congrats-message {
+            display: none;
+            margin-top: 10px;
+            color: gold;
+            font-size: 18px;
+            text-align: center;
+            transition: opacity 0.5s;
+        }
+
+        @keyframes zoom {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.5);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        #menu-button {
+            position: absolute;
+            top: -5px;
+            left: 0;
+            padding: 1px 1px;
+            background-color: #FF0000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+        }
+
+        #menu-button i {
+            margin-right: 8px;
+        }
+
+        .menu {
+            position: absolute;
+            top: 60px;
+            left: -10px;
+            background-color: #007BFF;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 101;
+            width: 150px;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateY(-10px);
+        }
+
+        .menu.open {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .menu-category {
+            margin: 10px 0;
+        }
+
+        .category-title {
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .category-title:hover {
+            color: #FFD700;
+        }
+
+        .category-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .category-content.visible {
+            display: block;
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Catch the Stars!</h1>
+    <div style="position: absolute; top: 20px; right: 20px; display: flex; align-items: center;">
+        <button id="music-toggle" style="background: none; border: none; cursor: pointer; color: white;">
+            <i class="fas fa-music" id="music-icon"></i>
+        </button>
+        <button id="vibration-toggle" style="background: none; border: none; cursor: pointer; color: white;">
+            <i class="fas fa-bell" id="vibration-icon"></i>
+        </button>
+    </div>
+    <audio id="background-music" loop>
+        <source src="https://www.bensound.com/bensound-music/bensound-ukulele.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <div class="game-area" id="game-area">
+        <div class="basket" id="basket">🧺</div>
+        <div class="time-display" id="time-display">00:00</div>
+        <div class="level-display" id="level-display">Level: 1</div>
+        <div class="speed-display" id="speed-display"></div> <!-- Updated speed display -->
+        <div class="shield-timer" id="shield-timer">Shield: 0s</div>
+        <div class="double-points-timer" id="double-points-timer">Double Points: 0s</div>
+    </div>
+    <button id="menu-button"><i class="fas fa-bars"></i>Menu</button>
+    <button id="pause-button" style="display: none;">Pause</button>
+    <div class="menu" id="menu">
+        <div class="menu-category">
+            <div class="category-title">About Game</div>
+            <div class="category-content about">
+                <p>This is a fun game where you catch stars and avoid bombs. Score points by catching stars, but beware of bombs! If you catch one, it's game over!</p>
+            </div>
+        </div>
+        <div class="menu-category">
+            <div class="category-title">How to Play</div>
+            <div class="category-content how-to-play">
+                <p>Use your mouse to move the basket left and right to catch falling stars. On a touchscreen device, tap the left or right side of the screen to move the basket in that direction. Click the "Start Game" button to begin! Remember, hit the "Stop Game" button twice to end the session.</p>
+                <p>Also, be aware that if you miss 25 stars, it's game over!</p>
+                <p>The shield you collect will protect you from bombs. Additionally, the game will speed up every minute!</p>
+            </div>
+        </div>
+        <div class="menu-category">
+            <div class="category-title">Report Bug</div>
+            <div class="category-content bug-report">
+                <p>If you encounter any bugs, i'd love to it hear from you! You can reach out to me anytime.</p>
+                <a href="mailto:kael.official20@gmail.com" style="color: yellow;">Click here to email me</a>
+            </div>
+        </div>
+        <div class="menu-category">
+            <div class="category-title">Who Created?</div>
+            <div class="category-content creator-info">
+                <p>This game was made possible by Deep AI, with a polished game idea,design and logic brought to life by Norwell ♾️.
+                 </p>
+            </div>
+        </div>
+        <div class="menu-category">
+            <div class="category-title">Game Info</div>
+            <div class="category-content game-info">
+                <p>Note: This game is purely client-side—no user information is stored or transmitted.</p>
+                <p>Date Created: January 26, 2025</p>
+                <p>all rights reserved @2025 infinity</p> <p> TO GOD BE THE GLORY</p>
+            </div>
+        </div>
+    </div>
+    <p class="scoreboard">Score: <span id="score">0</span> | High Score: <span id="high-score">0</span> | Missed Stars: <span id="missed">0</span>/25</p>
+    <div class="congrats-message" id="congrats-message">🎉 Congratulations on your highest score! 🎉</div>
+    <button id="start-button">Start Game</button>
+
+    <script>
+        let score = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+        let missedCount = 0;
+        let gameRunning = false;
+        let dropInterval;
+        let stopClickCount = 0;
+        let showedCongratsMessage = false;
+        let timerInterval;
+        let totalSeconds = 0;
+        let shieldActive = false;
+        let shieldDuration = 0;
+        let shieldTimer = null;
+        let lemonActive = false;
+        let doublePointsActive = false;
+        let doublePointsDuration = 0;
+        let doublePointsTimer = null;
+
+        let dropSpeed = 1000;
+        let speedIncreaseInterval;
+
+        let musicEnabled = true;
+        let vibrationEnabled = true;
+
+        let level = 1; // Initialize level to 1
+        let previousLevelTime = 0;
+        let paused = false; // Track if game is paused
+
+        const gameArea = document.getElementById('game-area');
+        const basket = document.getElementById('basket');
+        const scoreDisplay = document.getElementById('score');
+        const highScoreDisplay = document.getElementById('high-score');
+        const missedDisplay = document.getElementById('missed');
+        const startButton = document.getElementById('start-button');
+        const menuButton = document.getElementById('menu-button');
+        const menu = document.getElementById('menu');
+        const pauseButton = document.getElementById('pause-button'); // Pause Button
+        const congratsMessage = document.getElementById('congrats-message');
+        const timeDisplay = document.getElementById('time-display');
+        const levelDisplay = document.getElementById('level-display');
+        const speedDisplay = document.getElementById('speed-display'); // Current speed display
+        const shieldTimerDisplay = document.getElementById('shield-timer');
+        const doublePointsTimerDisplay = document.getElementById('double-points-timer');
+
+        highScoreDisplay.textContent = highScore;
+
+        document.getElementById('music-toggle').addEventListener('click', toggleMusic);
+        document.getElementById('vibration-toggle').addEventListener('click', toggleVibration);
+        startButton.addEventListener('click', toggleGame);
+        pauseButton.addEventListener('click', togglePause); // Attach pause function
+        menuButton.addEventListener('click', toggleMenu);
+
+        function startGame() {
+            // Reset game stats
+            score = 0;
+            missedCount = 0; // Reset missed stars count
+            totalSeconds = 0;
+            level = 1; // Reset level
+            showedCongratsMessage = false;
+            scoreDisplay.textContent = score;
+            missedDisplay.textContent = missedCount;
+            timeDisplay.textContent = "00:00"; // Reset time display
+            speedDisplay.style.display = 'none'; // Hide speed text
+
+            shieldActive = false;
+            lemonActive = false;
+            doublePointsActive = false;
+            gameRunning = true;
+            paused = false; // Reset pause state
+            pauseButton.style.display = 'block'; // Show pause button
+
+            dropSpeed = 1000; // Reset drop speed
+            startDropSpeedIncrease();
+
+            timerInterval = setInterval(updateTimer, 1000);
+
+            const backgroundMusic = document.getElementById('background-music');
+            if (musicEnabled) {
+                backgroundMusic.play();
+            }
+
+            startButton.textContent = "Stop Game"; // Set button text to "Stop Game"
+            dropItems();
+        }
+
+        function stopGame() {
+            gameRunning = false;
+            paused = false; // Reset pause state
+            clearInterval(dropInterval);
+            clearInterval(timerInterval);
+            clearInterval(speedIncreaseInterval);
+            clearTimeout(shieldTimer);
+            clearTimeout(doublePointsTimer);
+
+            shieldTimerDisplay.style.display = 'none';
+            doublePointsTimerDisplay.style.display = 'none';
+
+            const backgroundMusic = document.getElementById('background-music');
+            if (musicEnabled) {
+                backgroundMusic.pause();
+                backgroundMusic.currentTime = 0;
+            }
+
+            if (vibrationEnabled && 'vibrate' in navigator) {
+                navigator.vibrate(200);
+            }
+
+            pauseButton.style.display = 'none'; // Hide pause button on game over
+
+            // Show game over message
+            const gameOverMessage = `Game Over! Your score: ${score}\nTime Played: ${formatTime(totalSeconds)}`;
+            alert(gameOverMessage);
+
+            // Check if user beat the high score
+            if (score > highScore) {
+                highScore = score; // Update high score
+                highScoreDisplay.textContent = highScore; // Update displayed high score
+                localStorage.setItem('highScore', highScore); // Store the new high score
+                alert(`🎉 Congratulations! You beat your highest score! Your new highest score is: ${highScore}`);
+            }
+
+            // Reset the game state
+            startButton.textContent = "Start Game"; // Set button text back to "Start Game"
+            resetGame();
+        }
+
+        function resetGame() {
+            // Reset scoreboard values when the game ends
+            score = 0;
+            totalSeconds = 0; // Reset time
+            level = 1; // Reset to first level
+            scoreDisplay.textContent = score; // Update displayed score
+            timeDisplay.textContent = "00:00"; // Update displayed time
+            levelDisplay.textContent = "Level: 1"; // Update displayed level
+            missedDisplay.textContent = 0; // Reset missed stars count
+            
+            gameArea.style.boxShadow = 'none';
+            missedCount = 0;
+
+            const items = [...document.getElementsByClassName('star'), ...document.getElementsByClassName('bomb'), ...document.getElementsByClassName('shield'), ...document.getElementsByClassName('lemon')];
+            items.forEach(item => item.parentNode.removeChild(item));
+        }
+
+        function togglePause() {
+            if (!gameRunning) return; // Do nothing if game isn't running
+
+            paused = !paused; // Toggle paused state
+
+            if (paused) {
+                clearInterval(dropInterval); // Stop dropping items
+                clearInterval(timerInterval); // Stop timer
+
+                // Clear any active power-up timers
+                if (shieldActive) {
+                    clearInterval(shieldTimer);
+                }
+                if (doublePointsActive) {
+                    clearInterval(doublePointsTimer);
+                }
+
+                pauseButton.textContent = "Resume"; // Change button text to Resume
+
+            } else {
+                // Handle resuming
+                dropItems(); // Resume dropping items
+                timerInterval = setInterval(updateTimer, 1000); // Resume timer
+                pauseButton.textContent = "Pause"; // Change button text to Pause
+            }
+        }
+
+        function startDropSpeedIncrease() {
+            speedIncreaseInterval = setInterval(() => {
+                if (dropSpeed > 200) {
+                    dropSpeed -= 100;
+                    clearInterval(dropInterval);
+                    dropItems();
+                }
+            }, 60000);
+        }
+
+        function toggleMusic() {
+            musicEnabled = !musicEnabled;
+            const backgroundMusic = document.getElementById('background-music');
+
+            if (musicEnabled) {
+                backgroundMusic.play();
+                document.getElementById('music-icon').classList.remove('fa-volume-mute');
+                document.getElementById('music-icon').classList.add('fa-music');
+            } else {
+                backgroundMusic.pause();
+                backgroundMusic.currentTime = 0;
+                document.getElementById('music-icon').classList.remove('fa-music');
+                document.getElementById('music-icon').classList.add('fa-volume-mute');
+            }
+        }
+
+        function toggleVibration() {
+            vibrationEnabled = !vibrationEnabled;
+            const vibrationIcon = document.getElementById('vibration-icon');
+
+            if (vibrationEnabled) {
+                vibrationIcon.classList.remove('fa-volume-off');
+                vibrationIcon.classList.add('fa-bell');
+            } else {
+                vibrationIcon.classList.remove('fa-bell');
+                vibrationIcon.classList.add('fa-ban');
+            }
+        }
+
+        function toggleGame() {
+            if (gameRunning) {
+                stopClickCount++;
+                if (stopClickCount === 2) {
+                    stopGame();
+                    stopClickCount = 0;
+                }
+            } else {
+                startGame();
+                stopClickCount = 0;
+            }
+        }
+
+        function updateTimer() {
+            totalSeconds++;
+            timeDisplay.textContent = formatTime(totalSeconds);
+
+            if (totalSeconds - previousLevelTime >= 60) {
+                level++;
+                dropSpeed = Math.max(200, dropSpeed - 100); // Decrease drop speed to a minimum of 200 ms
+                previousLevelTime = totalSeconds;
+                levelDisplay.textContent = `Level: ${level}`;
+
+                // Show speed when level increases
+                showSpeedMessage(dropSpeed); // Show the current speed when the player levels up
+                levelDisplay.style.animation = 'none'; // Reset animation
+                levelDisplay.offsetHeight; // Trigger reflow
+                levelDisplay.style.animation = 'zoom 0.5s ease'; // Reapply animation
+            }
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secondsRemaining = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${secondsRemaining.toString().padStart(2, '0')}`;
+        }
+
+        function showSpeedMessage(speed) {
+            speedDisplay.textContent = `Speed up: ${speed} ms`;
+            speedDisplay.style.display = 'block'; // Show the speed text
+
+            // Remove the speed message after 5 seconds
+            setTimeout(() => {
+                speedDisplay.style.display = 'none'; // Hide speed display
+            }, 5000); // Display for 5 seconds
+        }
+
+        function toggleMenu() {
+            const isVisible = menu.classList.contains('open');
+            if (isVisible) {
+                closeMenu();
+            } else {
+                openMenu();
+            }
+        }
+
+        function openMenu() {
+            menu.classList.add('open');
+            menu.style.display = 'block';
+            setTimeout(() => {
+                menu.style.opacity = 1;
+                menu.style.transform = 'translateY(0)';
+            }, 10);
+            closeAllCategories();
+        }
+
+        function closeMenu() {
+            menu.style.opacity = 0;
+            menu.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                menu.style.display = 'none';
+                menu.classList.remove('open');
+            }, 300);
+            closeAllCategories();
+        }
+
+        function closeAllCategories() {
+            const categories = document.querySelectorAll('.category-content');
+            categories.forEach(content => {
+                content.style.display = 'none';
+                content.classList.remove('visible');
+            });
+        }
+
+        document.querySelectorAll('.category-title').forEach(title => {
+            title.addEventListener('click', toggleCategory);
+        });
+
+        function toggleCategory(event) {
+            const categoryContent = event.target.nextElementSibling;
+            const isVisible = categoryContent.classList.contains('visible');
+
+            if (isVisible) {
+                categoryContent.classList.remove('visible');
+                categoryContent.style.opacity = 0;
+                setTimeout(() => {
+                    categoryContent.style.display = 'none';
+                }, 300);
+            } else {
+                categoryContent.style.display = 'block';
+                setTimeout(() => {
+                    categoryContent.style.opacity = 1;
+                    categoryContent.classList.add('visible');
+                }, 10);
+            }
+        }
+
+        function dropItems() {
+            dropInterval = setInterval(() => {
+                const itemType = Math.random() < 0.1 ? 'shield' : (Math.random() < 0.2 ? 'bomb' : (Math.random() < 0.05 ? 'lemon' : 'star'));
+
+                const item = document.createElement('div');
+                item.className = itemType;
+                item.innerText = itemType === 'star' ? '⭐' : (itemType === 'bomb' ? '💣' : (itemType === 'lemon' ? '🍋' : '🛡️'));
+                item.style.left = `${Math.random() * (gameArea.clientWidth - 30)}px`;
+                item.style.top = '-40px';
+                gameArea.appendChild(item);
+                animateItem(item, itemType);
+            }, dropSpeed);
+        }
+
+        function animateItem(item, type) {
+            let position = 0;
+            const fallInterval = setInterval(() => {
+                if (paused) return; // If paused, do not update position
+                position += 2;
+                item.style.top = `${position}px`;
+
+                if (position > gameArea.clientHeight) {
+                    clearInterval(fallInterval);
+                    gameArea.removeChild(item);
+                    if (gameRunning && type === 'star') {
+                        missedCount++;
+                        missedDisplay.textContent = missedCount;
+                        showMiniText('-1', basket.offsetTop - 30);
+
+                        if (missedCount >= 20) {
+                            glowEffectOn();
+                        }
+                        if (missedCount >= 25) {
+                            stopGame();
+                        }
+                    }
+                    return;
+                }
+
+                if (checkCollision(item, type)) {
+                    clearInterval(fallInterval);
+                    gameArea.removeChild(item);
+                    let addedPoints;
+
+                    if (type === 'star') {
+                        addedPoints = doublePointsActive ? 2 : 1; // Points to be awarded
+                        score += addedPoints; // Update score
+                        scoreDisplay.textContent = score;
+                        showMiniText(`+${addedPoints} (Star)`, basket.offsetTop - 30); // Show score text
+                    } else if (type === 'bomb') {
+                        if (!shieldActive) {
+                            alert("You caught a bomb! Game Over!");
+                            stopGame();
+                        } else {
+                            // If shield is active
+                            addedPoints = doublePointsActive ? 2 : 1; // Points to be awarded
+                            score += addedPoints; // Update score
+                            scoreDisplay.textContent = score;
+                            showMiniText(`+${addedPoints} (Bomb)`, basket.offsetTop - 30);
+                        }
+                    } else if (type === 'shield') {
+                        if (!shieldActive) {
+                            activateShield();
+                            showMiniText(`Shield`, basket.offsetTop - 30); // Show shield text
+                        } else {
+                            score += 1; // Increment score for already active shield item
+                            scoreDisplay.textContent = score;
+                            showMiniText('+1 (Shield)', basket.offsetTop - 30);
+                        }
+                    } else if (type === 'lemon') {
+                        if (!doublePointsActive) {
+                            // If double points is not active, reactivate it
+                            score += 1; // Score for lemon
+                            scoreDisplay.textContent = score;
+                            showMiniText('+1 (Lemon)', basket.offsetTop - 30); // Show lemon points
+                            activateLemon();
+                        } else {
+                            // If double points is active, grant +2 points
+                            score += 2; // Continue double points
+                            scoreDisplay.textContent = score;
+                            showMiniText('+2 (Lemon)', basket.offsetTop - 30); // Show lemon points
+                        }
+                    }
+                }
+            }, 20);
+        }
+
+        function showMiniText(text, topPosition) {
+            const miniText = document.createElement('div');
+            miniText.innerText = text;
+            miniText.style.position = 'absolute';
+            miniText.style.color = 'yellow';
+            miniText.style.fontSize = '16px';
+            miniText.style.top = `${topPosition}px`;
+            miniText.style.left = `${basket.offsetLeft + basket.clientWidth / 2 - 10}px`;
+            gameArea.appendChild(miniText);
+            setTimeout(() => {
+                miniText.remove();
+            }, 1000);
+        }
+
+        function checkCollision(item, type) {
+            const itemRect = item.getBoundingClientRect();
+            const basketRect = basket.getBoundingClientRect();
+            return (
+                itemRect.bottom >= basketRect.top &&
+                itemRect.right >= basketRect.left &&
+                itemRect.left <= basketRect.right
+            );
+        }
+
+        function activateShield() {
+            if (shieldActive) return;
+            shieldActive = true;
+            shieldDuration = 10;
+            shieldTimerDisplay.style.display = 'block';
+            shieldTimerDisplay.textContent = `Shield: ${shieldDuration}s`;
+
+            shieldTimer = setInterval(() => {
+                shieldDuration--;
+                shieldTimerDisplay.textContent = `Shield: ${shieldDuration}s`;
+
+                if (shieldDuration <= 0) {
+                    clearInterval(shieldTimer);
+                    shieldActive = false;
+                    shieldTimerDisplay.textContent = `Shield: 0s`;
+                    shieldTimerDisplay.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        function activateLemon() {
+            lemonActive = true;
+            doublePointsActive = true; // Enable double points when lemon is caught
+            doublePointsTimerDisplay.style.display = 'block'; // Show double points timer
+            doublePointsDuration = 10; // Set double points duration for lemon
+            doublePointsTimerDisplay.textContent = `Double Points: ${doublePointsDuration}s`;
+
+            doublePointsTimer = setInterval(() => {
+                doublePointsDuration--;
+                doublePointsTimerDisplay.textContent = `Double Points: ${doublePointsDuration}s`;
+
+                if (doublePointsDuration <= 0) {
+                    clearInterval(doublePointsTimer);
+                    doublePointsActive = false;
+                    doublePointsTimerDisplay.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        function glowEffectOn() {
+            gameArea.style.boxShadow = "0 0 30px red";
+        }
+
+        function glowEffectOff() {
+            gameArea.style.boxShadow = "none";
+        }
+
+        // Event listeners to move the basket with the mouse
+        window.addEventListener('mousemove', (event) => {
+            if (!gameRunning || paused) return; // Do nothing if game isn't running or is paused
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            const basketWidth = basket.clientWidth;
+            let basketX = event.clientX - gameAreaRect.left - basketWidth / 2;
+
+            if (basketX < 0) basketX = 0;
+            if (basketX > gameArea.clientWidth - basketWidth) basketX = gameArea.clientWidth - basketWidth;
+
+            basket.style.left = `${basketX}px`;
+        });
+
+        window.addEventListener('click', function (event) {
+            const isMenuButton = event.target === menuButton;
+            const isMenuVisible = menu.classList.contains('open');
+            const isMenu = menu.contains(event.target);
+
+            if (!isMenuButton && isMenuVisible && !isMenu) {
+                closeMenu();
+            }
+        });
+    </script>
+</body>
+
+</html>
